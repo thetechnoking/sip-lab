@@ -1,0 +1,1 @@
+<sip:alice@siplab>;regint=120;outbound="sip:kamailio:5060";answermode=manual

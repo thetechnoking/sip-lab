@@ -1,0 +1,123 @@
+# A SIP lab you can break.
+#
+# Five services on one private network, no published ports. Everything talks to
+# everything by service name, which is the one topology that behaves identically
+# on Linux, macOS and Windows -- container-to-container traffic never crosses
+# the Docker Desktop VM boundary, so there is no port proxy to distort it.
+#
+#   alice, bob   softphones (baresip)
+#   kamailio     proxy and registrar -- everything goes through here
+#   asterisk     the media endpoint: 6000 echo, 6001 music
+#   drachtio     a SIP stack for Node to drive
+#   app          your code: answers 7000, rejects 7001
+#   sngrep       packet capture, started only with --profile debug
+#
+# Every tag is pinned. `latest` would break this lab twice over: Kamailio's
+# `latest` tracks the 6.0 branch and drachtio's is amd64-only, which would
+# leave Apple Silicon readers on emulation or stuck.
+
+name: sip-lab
+
+networks:
+  sip:
+    driver: bridge
+
+services:
+
+  kamailio:
+    image: ghcr.io/kamailio/kamailio-ci:6.0.8
+    container_name: lab-kamailio
+    networks: [sip]
+    volumes:
+      - ./kamailio/kamailio.cfg:/etc/kamailio/kamailio.cfg:ro
+    # -m shared memory, -M per-process memory, both in MB. The defaults are
+    # generous; a lab does not need them.
+    command: ["-m", "64", "-M", "8"]
+    restart: unless-stopped
+
+  asterisk:
+    image: andrius/asterisk:22.10.1_debian-trixie
+    container_name: lab-asterisk
+    networks: [sip]
+    volumes:
+      - ./asterisk/pjsip.conf:/etc/asterisk/pjsip.conf:ro
+      - ./asterisk/extensions.conf:/etc/asterisk/extensions.conf:ro
+      - ./asterisk/asterisk.conf:/etc/asterisk/asterisk.conf:ro
+      - ./asterisk/modules.conf:/etc/asterisk/modules.conf:ro
+      - ./asterisk/musiconhold.conf:/etc/asterisk/musiconhold.conf:ro
+    restart: unless-stopped
+
+  drachtio:
+    image: drachtio/drachtio-server:0.9.11
+    container_name: lab-drachtio
+    networks: [sip]
+    # "cymru" is drachtio's stock default for the control port shared secret.
+    # Fine here -- the port is not published and the network is private -- but
+    # anywhere real it is a credential, and it should not be this.
+    command: >
+      drachtio
+      --contact "sip:*;transport=udp"
+      --address 0.0.0.0
+      --port 9022
+      --secret cymru
+      --loglevel info
+    restart: unless-stopped
+
+  app:
+    image: node:22-alpine
+    container_name: lab-app
+    networks: [sip]
+    working_dir: /app
+    volumes:
+      - ./app:/app
+    # Install once into the mounted volume, then run. Keeps the lab to
+    # `docker compose up` with no separate build step.
+    command: sh -c "npm install --no-fund --no-audit && node index.js"
+    environment:
+      DRACHTIO_HOST: drachtio
+      DRACHTIO_PORT: "9022"
+      DRACHTIO_SECRET: cymru
+    depends_on: [drachtio]
+    restart: unless-stopped
+
+  alice:
+    image: ghcr.io/baresip/docker/baresip:v4.10.0
+    container_name: lab-alice
+    networks: [sip]
+    volumes:
+      - ./baresip/alice:/root/.baresip
+    depends_on: [kamailio]
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+
+  bob:
+    image: ghcr.io/baresip/docker/baresip:v4.10.0
+    container_name: lab-bob
+    networks: [sip]
+    volumes:
+      - ./baresip/bob:/root/.baresip
+    depends_on: [kamailio]
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+
+  # Capture. Shares Kamailio's network namespace, so it sees exactly what the
+  # proxy sees -- which, because the proxy Record-Routes itself into every
+  # dialog, is the whole conversation.
+  #
+  # Not `network_mode: host`: on Docker Desktop that lands you in the VM's
+  # namespace and captures nothing useful.
+  sngrep:
+    image: rpsa/sngrep:latest
+    container_name: lab-sngrep
+    network_mode: "service:kamailio"
+    # The image runs as an unprivileged user, and a non-root process cannot use
+    # CAP_NET_RAW even when the container is granted it -- sngrep fails with
+    # "socket: Operation not permitted". Capture needs root here.
+    user: "0:0"
+    cap_add: [NET_RAW, NET_ADMIN]
+    stdin_open: true
+    tty: true
+    profiles: [debug]
+    depends_on: [kamailio]

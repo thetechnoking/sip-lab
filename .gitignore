@@ -1,0 +1,12 @@
+# The app container runs npm install into this mounted directory on every
+# start, so the dependencies are reproducible from package.json and do not
+# belong in the source tree.
+app/node_modules/
+app/package-lock.json
+
+# baresip writes these at runtime: a generated instance id, the contacts
+# template, and whatever audio each phone received during a call.
+baresip/*/uuid
+baresip/*/contacts
+baresip/*/current_contact
+baresip/*/received.wav

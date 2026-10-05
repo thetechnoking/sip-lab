@@ -1,0 +1,10 @@
+{
+  "name": "sip-lab-app",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "main": "index.js",
+  "dependencies": {
+    "drachtio-srf": "^5.0.29"
+  }
+}
