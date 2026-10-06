@@ -29,6 +29,7 @@ git checkout part-1    # the lab as it stands in part one
 | Tag | Post |
 | --- | --- |
 | `part-1` | The Mental Model and a Lab You Can Break |
+| `part-2` | The Normal Call, Packet by Packet |
 
 `main` is always the newest version.
 
@@ -75,6 +76,7 @@ docker compose exec sngrep sngrep
 | `sip:bob@siplab` | Rings the other softphone. Answer it with `ctl.js bob accept`. |
 | `sip:6000@siplab` | Asterisk echoes your audio back. Proves media works end to end. |
 | `sip:6001@siplab` | Asterisk plays a continuous tone. A call that stays up and makes noise. |
+| `sip:6002@siplab` | Early media: Asterisk sends `183 Session Progress` with SDP and plays a tone **without answering**, then gives up. Audio before any `200 OK`. |
 | `sip:7000@siplab` | The Node app answers — and sends no audio at all. That is the point. |
 | `sip:7001@siplab` | The Node app rejects with `486 Busy Here`. |
 | `sip:9999@siplab` | Nothing is registered there; the proxy replies `404`. |
@@ -131,6 +133,21 @@ file read mid-call reports zero frames no matter what arrived.
 **Asterisk has no sound files.** The image ships without the sound packages, so
 `Playback()` fails silently and takes the call with it. The dialplan uses
 `Echo()` and `Playtones()`, which generate audio with nothing on disk.
+
+## If Asterisk starts rejecting calls from the proxy
+
+Asterisk identifies the proxy by hostname (`match = kamailio` in `pjsip.conf`),
+which it resolves to an address. The documentation does not say when that
+resolution is refreshed, so if the proxy container ever comes back on a
+different address, Asterisk may still be matching the old one and will refuse
+its calls.
+
+Every full `down` and `up` tested here has been fine, but if `6000` starts
+failing while phone-to-phone still works, that is the thing to suspect:
+
+```bash
+docker compose restart asterisk
+```
 
 ## Resetting
 
