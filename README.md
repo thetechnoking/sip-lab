@@ -34,6 +34,7 @@ git checkout part-1    # the lab as it stands in part one
 | `part-4` | CANCEL and the Race You Will Eventually Lose |
 | `part-5` | Hold and Unhold: Your First re-INVITE |
 | `part-6` | re-INVITE Beyond Hold: Glare, 491 and UPDATE |
+| `part-7` | Blind Transfer: REFER, NOTIFY, and Who Owns the Call Now |
 
 `main` is always the newest version.
 
