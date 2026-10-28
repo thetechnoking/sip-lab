@@ -30,6 +30,7 @@ git checkout part-1    # the lab as it stands in part one
 | --- | --- |
 | `part-1` | The Mental Model and a Lab You Can Break |
 | `part-2` | The Normal Call, Packet by Packet |
+| `part-3` | "Busy" Is Six Different Things |
 
 `main` is always the newest version.
 
@@ -78,7 +79,14 @@ docker compose exec sngrep sngrep
 | `sip:6001@siplab` | Asterisk plays a continuous tone. A call that stays up and makes noise. |
 | `sip:6002@siplab` | Early media: Asterisk sends `183 Session Progress` with SDP and plays a tone **without answering**, then gives up. Audio before any `200 OK`. |
 | `sip:7000@siplab` | The Node app answers — and sends no audio at all. That is the point. |
+| `sip:6003@siplab` | Asterisk `Busy()` -> 486 Busy Here. |
+| `sip:6004@siplab` | Asterisk `Congestion()` -> 503 Service Unavailable. |
+| `sip:6005@siplab` | Hangup cause 20 -> 480 Temporarily Unavailable. |
+| `sip:6006@siplab` | Hangup cause 21 -> 403 Forbidden (not 603 -- see part three). |
+| `sip:6007@siplab` | Hangup cause 1 -> 404 Not Found. |
 | `sip:7001@siplab` | The Node app rejects with `486 Busy Here`. |
+| `sip:7002@siplab` | The Node app declines with `603 Decline`. |
+| `sip:8000@siplab` | Serial fork: first leg returns 486, the proxy retries a second destination. The caller never sees the 486. |
 | `sip:9999@siplab` | Nothing is registered there; the proxy replies `404`. |
 
 ## Why it is built this way

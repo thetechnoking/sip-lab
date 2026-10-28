@@ -56,6 +56,13 @@ srf.invite(async (req, res) => {
     return res.send(486);
   }
 
+  if (to === '7002') {
+    // 603 Decline. Globally final: it means stop, not try elsewhere. Compare
+    // with the 486 above, which only describes this one device.
+    console.log('  replying 603 Decline');
+    return res.send(603);
+  }
+
   try {
     const localAddress = req.socket.localAddress || '127.0.0.1';
     const { dialog } = await srf.createUAS(req, res, {
