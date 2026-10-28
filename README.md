@@ -31,6 +31,7 @@ git checkout part-1    # the lab as it stands in part one
 | `part-1` | The Mental Model and a Lab You Can Break |
 | `part-2` | The Normal Call, Packet by Packet |
 | `part-3` | "Busy" Is Six Different Things |
+| `part-4` | CANCEL and the Race You Will Eventually Lose |
 
 `main` is always the newest version.
 
@@ -63,6 +64,14 @@ docker compose exec app node ctl.js bob   accept
 docker compose exec app node ctl.js alice hangup
 ```
 
+Stand in the CANCEL race on purpose -- 7003 answers at 3000 ms, so cancelling
+just before or just after that puts you on either side of it:
+
+```bash
+docker compose exec app node race.js 7003 2900   # CANCEL wins -> 487
+docker compose exec app node race.js 7003 3000   # answer wins -> a call nobody wanted
+```
+
 Watch the signalling while you do it:
 
 ```bash
@@ -86,6 +95,7 @@ docker compose exec sngrep sngrep
 | `sip:6007@siplab` | Hangup cause 1 -> 404 Not Found. |
 | `sip:7001@siplab` | The Node app rejects with `486 Busy Here`. |
 | `sip:7002@siplab` | The Node app declines with `603 Decline`. |
+| `sip:7003@siplab` | Rings, then answers at exactly 3000 ms. Used with `race.js` to stand in the CANCEL race. |
 | `sip:8000@siplab` | Serial fork: first leg returns 486, the proxy retries a second destination. The caller never sees the 486. |
 | `sip:9999@siplab` | Nothing is registered there; the proxy replies `404`. |
 

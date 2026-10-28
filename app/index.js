@@ -63,6 +63,37 @@ srf.invite(async (req, res) => {
     return res.send(603);
   }
 
+  if (to === '7003') {
+    // Answers exactly three seconds after the INVITE arrives, so a CANCEL sent
+    // at the same moment collides with the 200 OK. Part four is about what
+    // happens next, and it needs the collision to be reproducible rather than
+    // a once-a-month surprise.
+    //
+    // Ring first, so the caller is allowed to send a CANCEL at all: RFC 3261
+    // §9.1 says a CANCEL must not be sent until a provisional response has
+    // been received.
+    console.log('  7003: ringing, will answer in 3s');
+    res.send(180);
+
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+
+    try {
+      const localAddress = req.socket.localAddress || '127.0.0.1';
+      const { dialog } = await srf.createUAS(req, res, {
+        localSdp: silentSdp(localAddress),
+      });
+      console.log('  7003: answered — if a CANCEL was in flight, it lost');
+      setTimeout(() => dialog && dialog.connected && dialog.destroy(), 15_000);
+    } catch (err) {
+      if (err.status === 487) {
+        console.log('  7003: cancelled before answer — the CANCEL won');
+      } else {
+        console.error('  7003: could not answer:', err.message);
+      }
+    }
+    return;
+  }
+
   try {
     const localAddress = req.socket.localAddress || '127.0.0.1';
     const { dialog } = await srf.createUAS(req, res, {
