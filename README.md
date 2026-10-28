@@ -33,6 +33,7 @@ git checkout part-1    # the lab as it stands in part one
 | `part-3` | "Busy" Is Six Different Things |
 | `part-4` | CANCEL and the Race You Will Eventually Lose |
 | `part-5` | Hold and Unhold: Your First re-INVITE |
+| `part-6` | re-INVITE Beyond Hold: Glare, 491 and UPDATE |
 
 `main` is always the newest version.
 
@@ -96,6 +97,7 @@ docker compose exec sngrep sngrep
 | `sip:6007@siplab` | Hangup cause 1 -> 404 Not Found. |
 | `sip:7001@siplab` | The Node app rejects with `486 Busy Here`. |
 | `sip:7002@siplab` | The Node app declines with `603 Decline`. |
+| `sip:7004@siplab` | Answers, then stalls the next re-INVITE for 2s and fires its own into that pause -- forcing glare and a 491. |
 | `sip:7003@siplab` | Rings, then answers at exactly 3000 ms. Used with `race.js` to stand in the CANCEL race. |
 | `sip:8000@siplab` | Serial fork: first leg returns 486, the proxy retries a second destination. The caller never sees the 486. |
 | `sip:9999@siplab` | Nothing is registered there; the proxy replies `404`. |

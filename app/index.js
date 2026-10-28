@@ -63,6 +63,53 @@ srf.invite(async (req, res) => {
     return res.send(603);
   }
 
+  if (to === '7004') {
+    // Glare on demand.
+    //
+    // Answers normally. Then, when the caller sends a re-INVITE, holds the
+    // answer open for two seconds and fires its own re-INVITE half a second
+    // into that pause. The caller therefore has a transaction outstanding
+    // when ours lands, and replies 491 Request Pending.
+    //
+    // Creating the window this way is the whole trick: the natural window is
+    // one network hop wide, which is far too narrow to aim at.
+    const HOLD_ANSWER_MS = 2000;
+    const COLLIDE_AFTER_MS = 500;
+
+    console.log('  7004: answering; will stall the next re-INVITE to force glare');
+    try {
+      const localAddress = req.socket.localAddress || '127.0.0.1';
+      const dialog = await srf.createUAS(req, res, {
+        localSdp: silentSdp(localAddress),
+      });
+
+      dialog.on('modify', async (modReq, modRes) => {
+        console.log('  7004: re-INVITE arrived — stalling my answer for ' +
+                    HOLD_ANSWER_MS + ' ms');
+
+        setTimeout(async () => {
+          console.log('  7004: sending my own re-INVITE into that window');
+          try {
+            await dialog.modify(silentSdp(localAddress));
+            console.log('  7004: mine succeeded (no glare this time)');
+          } catch (err) {
+            console.log('  7004: mine got ' + (err.status || err.message));
+          }
+        }, COLLIDE_AFTER_MS);
+
+        setTimeout(() => {
+          console.log('  7004: now answering the caller\'s re-INVITE');
+          modRes.send(200, { body: silentSdp(localAddress) });
+        }, HOLD_ANSWER_MS);
+      });
+
+      setTimeout(() => dialog && dialog.connected && dialog.destroy(), 25_000);
+    } catch (err) {
+      console.log('  7004: could not answer: ' + (err.status || err.message));
+    }
+    return;
+  }
+
   if (to === '7003') {
     // Answers exactly three seconds after the INVITE arrives, so a CANCEL sent
     // at the same moment collides with the 200 OK. Part four is about what
@@ -79,7 +126,7 @@ srf.invite(async (req, res) => {
 
     try {
       const localAddress = req.socket.localAddress || '127.0.0.1';
-      const { dialog } = await srf.createUAS(req, res, {
+      const dialog = await srf.createUAS(req, res, {
         localSdp: silentSdp(localAddress),
       });
       console.log('  7003: answered — if a CANCEL was in flight, it lost');
@@ -96,7 +143,7 @@ srf.invite(async (req, res) => {
 
   try {
     const localAddress = req.socket.localAddress || '127.0.0.1';
-    const { dialog } = await srf.createUAS(req, res, {
+    const dialog = await srf.createUAS(req, res, {
       localSdp: silentSdp(localAddress),
     });
 
