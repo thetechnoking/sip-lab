@@ -35,6 +35,7 @@ git checkout part-1    # the lab as it stands in part one
 | `part-5` | Hold and Unhold: Your First re-INVITE |
 | `part-6` | re-INVITE Beyond Hold: Glare, 491 and UPDATE |
 | `part-7` | Blind Transfer: REFER, NOTIFY, and Who Owns the Call Now |
+| `part-8` | Hangup Causes: What Survives the PSTN Border |
 
 `main` is always the newest version.
 
@@ -96,6 +97,9 @@ docker compose exec sngrep sngrep
 | `sip:6005@siplab` | Hangup cause 20 -> 480 Temporarily Unavailable. |
 | `sip:6006@siplab` | Hangup cause 21 -> 403 Forbidden (not 603 -- see part three). |
 | `sip:6007@siplab` | Hangup cause 1 -> 404 Not Found. |
+| `sip:61NN@siplab` | Asterisk hangs up with Q.850 cause NN, so you can see what SIP status it becomes. 6117 for cause 17, 61102 for 102. |
+| `sip:9XXXX@siplab` | Asterisk dials XXXX back out through the proxy and logs the HANGUPCAUSE it ended up with. Dial 97486 to see what a 486 becomes. |
+| `sip:7NNN@siplab` | The Node app replies with SIP status NNN exactly, with no translation in the path. 7486, 7603, 7404. |
 | `sip:7001@siplab` | The Node app rejects with `486 Busy Here`. |
 | `sip:7002@siplab` | The Node app declines with `603 Decline`. |
 | `sip:7004@siplab` | Answers, then stalls the next re-INVITE for 2s and fires its own into that pause -- forcing glare and a 491. |

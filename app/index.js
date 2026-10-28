@@ -49,6 +49,18 @@ srf.invite(async (req, res) => {
   const from = req.callingNumber;
   console.log(`INVITE  ${from} -> ${to}   Call-ID ${req.get('Call-ID')}`);
 
+  // 7NNN -- reply with SIP status NNN, exactly. 7486 answers 486, 7603
+  // answers 603. No translation layer, so whatever arrives at the far end is
+  // precisely what was sent.
+  const asStatus = /^7(\d{3})$/.exec(to);
+  if (asStatus) {
+    const status = parseInt(asStatus[1], 10);
+    if (status >= 400 && status <= 699) {
+      console.log(`  replying ${status} as asked`);
+      return res.send(status);
+    }
+  }
+
   if (to === '7001') {
     // A deliberate rejection, so there is a non-2xx final response to look at
     // in a capture -- and an ACK that is part of the INVITE transaction.
