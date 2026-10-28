@@ -32,6 +32,7 @@ git checkout part-1    # the lab as it stands in part one
 | `part-2` | The Normal Call, Packet by Packet |
 | `part-3` | "Busy" Is Six Different Things |
 | `part-4` | CANCEL and the Race You Will Eventually Lose |
+| `part-5` | Hold and Unhold: Your First re-INVITE |
 
 `main` is always the newest version.
 
